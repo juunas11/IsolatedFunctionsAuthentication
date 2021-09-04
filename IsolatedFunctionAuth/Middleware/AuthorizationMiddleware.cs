@@ -2,6 +2,7 @@
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Middleware;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Reflection;
@@ -38,7 +39,7 @@ namespace IsolatedFunctionAuth.Middleware
                 // Request made with delegated permissions, check scopes and user roles
                 return AuthorizeDelegatedPermissions(context, principal);
             }
-             
+
             // Request made with application permissions, check app roles
             return AuthorizeApplicationPermissions(context, principal);
         }
@@ -49,11 +50,11 @@ namespace IsolatedFunctionAuth.Middleware
             // when called with scopes
             var targetMethod = context.GetTargetFunctionMethod();
 
-            var acceptedUserRoles = GetAcceptedUserRoles(context, targetMethod);
+            var (acceptedScopes, acceptedUserRoles) = GetAcceptedScopesAndUserRoles(targetMethod);
+
             var userRoles = principal.FindAll(ClaimTypes.Role);
             var userHasAcceptedRole = userRoles.Any(ur => acceptedUserRoles.Contains(ur.Value));
 
-            var acceptedScopes = GetAcceptedScopes(context, targetMethod);
             var callerScopes = (principal.FindFirst(ScopeClaimType)?.Value ?? "")
                 .Split(' ', StringSplitOptions.RemoveEmptyEntries);
             var callerHasAcceptedScope = callerScopes.Any(cs => acceptedScopes.Contains(cs));
@@ -65,64 +66,53 @@ namespace IsolatedFunctionAuth.Middleware
         {
             var targetMethod = context.GetTargetFunctionMethod();
 
-            var acceptedAppRoles = GetAcceptedAppRoles(context, targetMethod);
+            var acceptedAppRoles = GetAcceptedAppRoles(targetMethod);
             var appRoles = principal.FindAll(ClaimTypes.Role);
             var appHasAcceptedRole = appRoles.Any(ur => acceptedAppRoles.Contains(ur.Value));
             return appHasAcceptedRole;
         }
 
-        private static string[] GetAcceptedUserRoles(FunctionContext context, MethodInfo targetMethod)
+        private static (List<string> scopes, List<string> userRoles) GetAcceptedScopesAndUserRoles(MethodInfo targetMethod)
         {
-            var entryPoint = context.FunctionDefinition.EntryPoint;
-
-            var attributes = targetMethod.GetCustomAttributes<RequiresUserRoleAttribute>().ToList();
-            if (attributes.Count == 0)
-            {
-                return Array.Empty<string>();
-            }
-            if (attributes.Count > 1)
-            {
-                throw new Exception($"Function {entryPoint} has more than one [RequiresUserRole] attribute");
-            }
-
-            var acceptedRoles = attributes[0].AcceptedRoles;
-            return acceptedRoles;
+            var attributes = GetCustomAttributesOnClassAndMethod<AuthorizeAttribute>(targetMethod);
+            // When specifying multiple attributes (one on class and one on method),
+            // both of them must pass.
+            // This means we only allow values that are common across them.
+            var scopes = attributes
+                .Select(a => a.Scopes)
+                .Aggregate(new List<string>(), (result, acceptedRoles) =>
+                {
+                    return result.Intersect(acceptedRoles).ToList();
+                });
+            var userRoles = attributes
+                .Select(a => a.UserRoles)
+                .Aggregate(new List<string>(), (result, acceptedRoles) =>
+                {
+                    return result.Intersect(acceptedRoles).ToList();
+                });
+            return (scopes, userRoles);
         }
 
-        private static string[] GetAcceptedScopes(FunctionContext context, MethodInfo targetMethod)
+        private static List<string> GetAcceptedAppRoles(MethodInfo targetMethod)
         {
-            var entryPoint = context.FunctionDefinition.EntryPoint;
-
-            var attributes = targetMethod.GetCustomAttributes<RequiresScopeAttribute>().ToList();
-            if (attributes.Count == 0)
-            {
-                return Array.Empty<string>();
-            }
-            if (attributes.Count > 1)
-            {
-                throw new Exception($"Function {entryPoint} has more than one [RequiresScope] attribute");
-            }
-
-            var acceptedScopes = attributes[0].AcceptedScopes;
-            return acceptedScopes;
+            var attributes = GetCustomAttributesOnClassAndMethod<AuthorizeAttribute>(targetMethod);
+            // When specifying multiple attributes (one on class and one on method),
+            // both of them must pass.
+            // This means we only allow values that are common across them.
+            return attributes
+                .Select(a => a.AppRoles)
+                .Aggregate(new List<string>(), (result, acceptedRoles) =>
+                {
+                    return result.Intersect(acceptedRoles).ToList();
+                });
         }
 
-        private static string[] GetAcceptedAppRoles(FunctionContext context, MethodInfo targetMethod)
+        private static List<T> GetCustomAttributesOnClassAndMethod<T>(MethodInfo targetMethod)
+            where T : Attribute
         {
-            var entryPoint = context.FunctionDefinition.EntryPoint;
-
-            var attributes = targetMethod.GetCustomAttributes<RequiresAppRoleAttribute>().ToList();
-            if (attributes.Count == 0)
-            {
-                return Array.Empty<string>();
-            }
-            if (attributes.Count > 1)
-            {
-                throw new Exception($"Function {entryPoint} has more than one [RequiresAppRole] attribute");
-            }
-
-            var acceptedRoles = attributes[0].AcceptedRoles;
-            return acceptedRoles;
+            var methodAttributes = targetMethod.GetCustomAttributes<T>();
+            var classAttributes = targetMethod.DeclaringType.GetCustomAttributes<T>();
+            return methodAttributes.Concat(classAttributes).ToList();
         }
     }
 }
