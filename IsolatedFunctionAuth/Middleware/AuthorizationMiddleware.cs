@@ -46,8 +46,6 @@ namespace IsolatedFunctionAuth.Middleware
 
         private static bool AuthorizeDelegatedPermissions(FunctionContext context, ClaimsPrincipal principal)
         {
-            // This app requires both a scope and user role
-            // when called with scopes
             var targetMethod = context.GetTargetFunctionMethod();
 
             var (acceptedScopes, acceptedUserRoles) = GetAcceptedScopesAndUserRoles(targetMethod);
@@ -59,6 +57,8 @@ namespace IsolatedFunctionAuth.Middleware
                 .Split(' ', StringSplitOptions.RemoveEmptyEntries);
             var callerHasAcceptedScope = callerScopes.Any(cs => acceptedScopes.Contains(cs));
 
+            // This app requires both a scope and user role
+            // when called with scopes, so we check both
             return userHasAcceptedRole && callerHasAcceptedScope;
         }
 
@@ -75,36 +75,41 @@ namespace IsolatedFunctionAuth.Middleware
         private static (List<string> scopes, List<string> userRoles) GetAcceptedScopesAndUserRoles(MethodInfo targetMethod)
         {
             var attributes = GetCustomAttributesOnClassAndMethod<AuthorizeAttribute>(targetMethod);
-            // When specifying multiple attributes (one on class and one on method),
-            // both of them must pass.
-            // This means we only allow values that are common across them.
+            // If scopes A and B are allowed at class level,
+            // and scope A is allowed at method level,
+            // then only scope A can be allowed.
+            // This finds those common scopes and
+            // user roles on the attributes.
             var scopes = attributes
                 .Select(a => a.Scopes)
-                .Aggregate(new List<string>(), (result, acceptedRoles) =>
+                .Aggregate(new List<string>().AsEnumerable(), (result, acceptedScopes) =>
                 {
-                    return result.Intersect(acceptedRoles).ToList();
-                });
+                    return result.Intersect(acceptedScopes);
+                })
+                .ToList();
             var userRoles = attributes
                 .Select(a => a.UserRoles)
-                .Aggregate(new List<string>(), (result, acceptedRoles) =>
+                .Aggregate(new List<string>().AsEnumerable(), (result, acceptedRoles) =>
                 {
-                    return result.Intersect(acceptedRoles).ToList();
-                });
+                    return result.Intersect(acceptedRoles);
+                })
+                .ToList();
             return (scopes, userRoles);
         }
 
         private static List<string> GetAcceptedAppRoles(MethodInfo targetMethod)
         {
             var attributes = GetCustomAttributesOnClassAndMethod<AuthorizeAttribute>(targetMethod);
-            // When specifying multiple attributes (one on class and one on method),
-            // both of them must pass.
-            // This means we only allow values that are common across them.
+            // Same as above for scopes and user roles,
+            // only allow app roles that are common in
+            // class and method level attributes.
             return attributes
                 .Select(a => a.AppRoles)
-                .Aggregate(new List<string>(), (result, acceptedRoles) =>
+                .Aggregate(new List<string>().AsEnumerable(), (result, acceptedRoles) =>
                 {
-                    return result.Intersect(acceptedRoles).ToList();
-                });
+                    return result.Intersect(acceptedRoles);
+                })
+                .ToList();
         }
 
         private static List<T> GetCustomAttributesOnClassAndMethod<T>(MethodInfo targetMethod)

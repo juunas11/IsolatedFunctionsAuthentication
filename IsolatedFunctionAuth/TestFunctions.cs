@@ -12,7 +12,7 @@ namespace IsolatedFunctionAuth
         Scopes = new[] { Scopes.FunctionsAccess },
         UserRoles = new[] { UserRoles.User, UserRoles.Admin },
         AppRoles = new[] { AppRoles.AccessAllFunctions })]
-    public static class Function1
+    public static class TestFunctions
     {
         // This function can be called with both scopes and app roles
         // We don't need another Authorize attribute since it would just
