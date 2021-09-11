@@ -53,6 +53,7 @@ namespace IsolatedFunctionAuth.Middleware
             var userRoles = principal.FindAll(ClaimTypes.Role);
             var userHasAcceptedRole = userRoles.Any(ur => acceptedUserRoles.Contains(ur.Value));
 
+            // Scopes are stored in a single claim, space-separated
             var callerScopes = (principal.FindFirst(ScopeClaimType)?.Value ?? "")
                 .Split(' ', StringSplitOptions.RemoveEmptyEntries);
             var callerHasAcceptedScope = callerScopes.Any(cs => acceptedScopes.Contains(cs));

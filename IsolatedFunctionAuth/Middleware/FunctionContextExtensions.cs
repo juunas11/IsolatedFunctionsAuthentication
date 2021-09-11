@@ -36,7 +36,7 @@ namespace IsolatedFunctionAuth.Middleware
             // Would be nice if this was available out of the box on FunctionContext
 
             // This contains the fully qualified name of the method
-            // E.g. IsolatedFunctionAuth.Function1.ScopesAndAppRoles
+            // E.g. IsolatedFunctionAuth.TestFunctions.ScopesAndAppRoles
             var entryPoint = context.FunctionDefinition.EntryPoint;
 
             var assemblyPath = context.FunctionDefinition.PathToAssembly;
