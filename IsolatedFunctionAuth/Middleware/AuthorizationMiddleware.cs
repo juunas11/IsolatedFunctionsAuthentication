@@ -82,15 +82,17 @@ namespace IsolatedFunctionAuth.Middleware
             // This finds those common scopes and
             // user roles on the attributes.
             var scopes = attributes
+                .Skip(1)
                 .Select(a => a.Scopes)
-                .Aggregate(new List<string>().AsEnumerable(), (result, acceptedScopes) =>
+                .Aggregate(attributes.FirstOrDefault()?.Scopes ?? Enumerable.Empty<string>(), (result, acceptedScopes) =>
                 {
                     return result.Intersect(acceptedScopes);
                 })
                 .ToList();
             var userRoles = attributes
+                .Skip(1)
                 .Select(a => a.UserRoles)
-                .Aggregate(new List<string>().AsEnumerable(), (result, acceptedRoles) =>
+                .Aggregate(attributes.FirstOrDefault()?.UserRoles ?? Enumerable.Empty<string>(), (result, acceptedRoles) =>
                 {
                     return result.Intersect(acceptedRoles);
                 })
@@ -105,8 +107,9 @@ namespace IsolatedFunctionAuth.Middleware
             // only allow app roles that are common in
             // class and method level attributes.
             return attributes
+                .Skip(1)
                 .Select(a => a.AppRoles)
-                .Aggregate(new List<string>().AsEnumerable(), (result, acceptedRoles) =>
+                .Aggregate(attributes.FirstOrDefault()?.UserRoles ?? Enumerable.Empty<string>(), (result, acceptedRoles) =>
                 {
                     return result.Intersect(acceptedRoles);
                 })

@@ -8,7 +8,7 @@ namespace IsolatedFunctionAuth
         public static void Main()
         {
             var host = new HostBuilder()
-                .ConfigureFunctionsWorkerDefaults((context, builder) =>
+                .ConfigureFunctionsWorkerDefaults(builder =>
                 {
                     builder.UseMiddleware<AuthenticationMiddleware>();
                     builder.UseMiddleware<AuthorizationMiddleware>();
