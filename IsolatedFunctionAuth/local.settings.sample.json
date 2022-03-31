@@ -1,9 +1,0 @@
-{
-  "IsEncrypted": false,
-  "Values": {
-    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
-    "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
-    "AuthenticationAuthority": "https://login.microsoftonline.com/your-aad-tenant-id/v2.0",
-    "AuthenticationClientId": "your-aad-app-id"
-  }
-}

@@ -9,3 +9,6 @@ Usage instructions:
 
 There are a couple reflection hacks here that are bound to break at some point if the internals change.
 It was the only way I found to set the response status code from within a middleware since all the relevant classes are marked internal.
+
+<u>2022/3/31 Update by @Herman-Wu </u>
+I forked this project and changed the project type of the IsolatedFunctionAuth project from an Azure Functions project to a .Net library project so that we can reuse it in different Azure Functions projects.

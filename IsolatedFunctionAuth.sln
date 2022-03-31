@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.0.31410.414
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31515.178
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IsolatedFunctionAuth", "IsolatedFunctionAuth\IsolatedFunctionAuth.csproj", "{507778F4-B446-48CE-8D1F-1375961C4DE2}"
 EndProject
