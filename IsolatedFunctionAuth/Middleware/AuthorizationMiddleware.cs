@@ -22,7 +22,7 @@ namespace IsolatedFunctionAuth.Middleware
             var principalFeature = context.Features.Get<JwtPrincipalFeature>();
             if (!AuthorizePrincipal(context, principalFeature.Principal))
             {
-                context.SetHttpResponseStatusCode(HttpStatusCode.Forbidden);
+                await context.SetHttpResponseStatusCode(HttpStatusCode.Forbidden);
                 return;
             }
 
