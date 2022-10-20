@@ -41,14 +41,14 @@ namespace IsolatedFunctionAuth.Middleware
             if (!TryGetTokenFromHeaders(context, out var token))
             {
                 // Unable to get token from headers
-                context.SetHttpResponseStatusCode(HttpStatusCode.Unauthorized);
+                await context.SetHttpResponseStatusCode(HttpStatusCode.Unauthorized);
                 return;
             }
 
             if (!_tokenValidator.CanReadToken(token))
             {
                 // Token is malformed
-                context.SetHttpResponseStatusCode(HttpStatusCode.Unauthorized);
+                await context.SetHttpResponseStatusCode(HttpStatusCode.Unauthorized);
                 return;
             }
 
@@ -73,7 +73,7 @@ namespace IsolatedFunctionAuth.Middleware
             catch (SecurityTokenException)
             {
                 // Token is not valid (expired etc.)
-                context.SetHttpResponseStatusCode(HttpStatusCode.Unauthorized);
+                await context.SetHttpResponseStatusCode(HttpStatusCode.Unauthorized);
                 return;
             }
         }

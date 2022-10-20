@@ -1,33 +1,25 @@
 ﻿using Microsoft.Azure.Functions.Worker;
+using Microsoft.Azure.Functions.Worker.Http;
 using System;
 using System.Linq;
 using System.Net;
 using System.Reflection;
+using System.Threading.Tasks;
 
 namespace IsolatedFunctionAuth.Middleware
 {
     public static class FunctionContextExtensions
     {
-        public static void SetHttpResponseStatusCode(
+        public static async Task SetHttpResponseStatusCode(
             this FunctionContext context,
             HttpStatusCode statusCode)
         {
-            // Terrible reflection code since I haven't found a nicer way to do this...
-            // For some reason the types are marked as internal
-            // If there's code that will break in this sample,
-            // it's probably here.
-            var coreAssembly = Assembly.Load("Microsoft.Azure.Functions.Worker.Core");
-            var featureInterfaceName = "Microsoft.Azure.Functions.Worker.Context.Features.IFunctionBindingsFeature";
-            var featureInterfaceType = coreAssembly.GetType(featureInterfaceName);
-            var bindingsFeature = context.Features.Single(
-                f => f.Key.FullName == featureInterfaceType.FullName).Value;
-            var invocationResultProp = featureInterfaceType.GetProperty("InvocationResult");
-
-            var grpcAssembly = Assembly.Load("Microsoft.Azure.Functions.Worker.Grpc");
-            var responseDataType = grpcAssembly.GetType("Microsoft.Azure.Functions.Worker.GrpcHttpResponseData");
-            var responseData = Activator.CreateInstance(responseDataType, context, statusCode);
-
-            invocationResultProp.SetMethod.Invoke(bindingsFeature, new object[] { responseData });
+            var req = await context.GetHttpRequestDataAsync();
+            if (req == null) { return; }
+            var response = HttpResponseData.CreateResponse(req);
+            response.StatusCode = statusCode;
+            var result = context.GetInvocationResult();
+            result.Value = response;
         }
 
         public static MethodInfo GetTargetFunctionMethod(this FunctionContext context)
